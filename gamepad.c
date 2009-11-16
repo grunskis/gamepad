@@ -31,8 +31,10 @@
 
 #define CPU_PRESCALE(n)	(CLKPR = 0x80, CLKPR = (n))
 
-#define B0              (1 << 0)
-#define B1              (1 << 1)
+#define PIN0 (1 << 0)
+#define PIN1 (1 << 1)
+
+#define BUTTON_PINS (PIN0 | PIN1)
 
 int main(void) {
   uint8_t b;
@@ -42,8 +44,7 @@ int main(void) {
   LED_CONFIG;
   LED_OFF;
 
-  DDRB  = B0;
-  PORTB = B0;
+  PORTB |= BUTTON_PINS; // enable pull-ups on button pins
 
   // Initialize the USB, and then wait for the host to set configuration.
   // If the Teensy is powered without a PC connected to the USB port,
@@ -56,14 +57,14 @@ int main(void) {
   _delay_ms(1000);
 
   while (1) {
-    b = PINB;
+    b = PINB & BUTTON_PINS;
 
-   if (b & B0) {
-      LED_ON;
-      usb_joystick_action(128, 128, 0, 0);
+    if (b) {
+      LED_ON; // debug message
+      usb_joystick_action(128, 128, b);
     } else {
       LED_OFF;
-      usb_joystick_action(128, 128, 1, 0);
+      usb_joystick_action(128, 128, 0);
     }
   }
 }

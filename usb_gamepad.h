@@ -6,7 +6,7 @@
 void usb_init(void);			// initialize everything
 uint8_t usb_configured(void);		// is the USB port configured
 
-int8_t usb_joystick_action(uint8_t x, uint8_t y, uint8_t button1, uint8_t button2);
+int8_t usb_joystick_action(uint8_t x, uint8_t y, uint8_t buttons);
 int8_t usb_joystick_send(void);
 
 extern uint8_t joystick_buttons;
