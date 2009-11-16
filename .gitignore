@@ -1,0 +1,14 @@
+usb_gamepad.lst
+gamepad.eep
+gamepad.elf
+gamepad.hex
+gamepad.lss
+gamepad.lst
+gamepad.map
+gamepad.o
+gamepad.sym
+usb_gamepad.o
+.dep/example.o.d
+.dep/gamepad.o.d
+.dep/usb_gamepad.o.d
+.dep/usb_keyboard.o.d
