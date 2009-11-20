@@ -225,11 +225,10 @@ static struct descriptor_list_struct {
 // zero when we are not configured, non-zero when enumerated
 static volatile uint8_t usb_configuration = 0;
 
-uint8_t joystick_x = 0;
-uint8_t joystick_y = 0;
+uint8_t joystick_x = 128;
+uint8_t joystick_y = 128;
 
 uint8_t joystick_buttons = 0;
-uint8_t joystick_buttons_reported = 0;
 
 static uint8_t joystick_idle_config = 0;
 
@@ -267,13 +266,7 @@ uint8_t usb_configured(void) {
 int8_t usb_joystick_action(uint8_t x, uint8_t y, uint8_t buttons) {
   joystick_x = x;
   joystick_y = y;
-  joystick_buttons = ~(buttons & 0x03) & 0x03;
-
-  if (joystick_buttons == joystick_buttons_reported) {
-    return -1;
-  }
-
-  joystick_buttons_reported = joystick_buttons;
+  joystick_buttons = buttons; 
 
   return usb_joystick_send();
 }

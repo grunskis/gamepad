@@ -26,25 +26,34 @@
 #include "usb_gamepad.h"
 
 #define LED_CONFIG	(DDRD |= (1<<6))
-#define LED_ON		(PORTD &= ~(1<<6))
-#define LED_OFF		(PORTD |= (1<<6))
+#define LED_OFF		(PORTD &= ~(1<<6))
+#define LED_ON		(PORTD |= (1<<6))
 
 #define CPU_PRESCALE(n)	(CLKPR = 0x80, CLKPR = (n))
 
-#define PIN0 (1 << 0)
-#define PIN1 (1 << 1)
+#define BUTTON1 (1 << 0)
+#define BUTTON2 (1 << 1)
 
-#define BUTTON_PINS (PIN0 | PIN1)
+#define JOYSTICK_RIGHT (1 << 2)
+#define JOYSTICK_LEFT  (1 << 3)
+#define JOYSTICK_UP    (1 << 4)
+#define JOYSTICK_DOWN  (1 << 5)
+
+//#define BUTTON_PINS   (PIN0 | PIN1)
+//#define JOYSTICK_PINS (PIN2 | PIN5)
 
 int main(void) {
-  uint8_t b;
+  uint8_t b, x, y;
 
   // set for 16 MHz clock
   CPU_PRESCALE(0);
   LED_CONFIG;
   LED_OFF;
 
-  PORTB |= BUTTON_PINS; // enable pull-ups on button pins
+  PORTB = 0xff;
+  DDRB = 0;
+  //PORTB |= BUTTON_PINS;   // enable pull-ups on button pins
+
 
   // Initialize the USB, and then wait for the host to set configuration.
   // If the Teensy is powered without a PC connected to the USB port,
@@ -57,14 +66,35 @@ int main(void) {
   _delay_ms(1000);
 
   while (1) {
-    b = PINB & BUTTON_PINS;
+    b = 0; // assume no buttons pressed
+    x = y = 128; // assume no joystick movement
+    
+    if ((PINB & JOYSTICK_LEFT) == 0) {
+      x = 0;
+    } else if ((PINB & JOYSTICK_RIGHT) == 0) {
+      x = 255;
+    }
 
-    if (b) {
-      LED_ON; // debug message
-      usb_joystick_action(128, 128, b);
+    if ((PINB & JOYSTICK_UP) == 0) {
+      y = 255;
+    } else if ((PINB & JOYSTICK_DOWN) == 0) {
+      y = 0;
+    }
+
+    if ((PINB & BUTTON1) == 0) {
+      b = BUTTON1;
+    }
+    if ((PINB & BUTTON2) == 0) {
+      b |= BUTTON2;
+    }
+
+    usb_joystick_action(x, y, b);
+
+    // debug message
+    if (x != 128 || y != 128 || b != 0) {
+      LED_ON;
     } else {
       LED_OFF;
-      usb_joystick_action(128, 128, 0);
     }
   }
 }
