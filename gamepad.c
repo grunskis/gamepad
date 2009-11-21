@@ -39,8 +39,8 @@
 #define JOYSTICK_UP    (1 << 4)
 #define JOYSTICK_DOWN  (1 << 5)
 
-//#define BUTTON_PINS   (PIN0 | PIN1)
-//#define JOYSTICK_PINS (PIN2 | PIN5)
+#define BUTTON_PINS   (BUTTON1 | BUTTON2)
+#define JOYSTICK_PINS (JOYSTICK_LEFT | JOYSTICK_RIGHT | JOYSTICK_UP | JOYSTICK_DOWN)
 
 int main(void) {
   uint8_t b, x, y;
@@ -48,12 +48,9 @@ int main(void) {
   // set for 16 MHz clock
   CPU_PRESCALE(0);
   LED_CONFIG;
-  LED_OFF;
+  LED_ON; // power up led on startup for 1 sec
 
-  PORTB = 0xff;
-  DDRB = 0;
-  //PORTB |= BUTTON_PINS;   // enable pull-ups on button pins
-
+  PORTB = (BUTTON_PINS | JOYSTICK_PINS); // enable pull-ups on button & joystick pins
 
   // Initialize the USB, and then wait for the host to set configuration.
   // If the Teensy is powered without a PC connected to the USB port,
@@ -76,9 +73,9 @@ int main(void) {
     }
 
     if ((PINB & JOYSTICK_UP) == 0) {
-      y = 255;
-    } else if ((PINB & JOYSTICK_DOWN) == 0) {
       y = 0;
+    } else if ((PINB & JOYSTICK_DOWN) == 0) {
+      y = 255;
     }
 
     if ((PINB & BUTTON1) == 0) {
