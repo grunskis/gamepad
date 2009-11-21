@@ -61,15 +61,15 @@
 
 #define ENDPOINT0_SIZE		32
 
-#define JOYSTICK_INTERFACE	0
-#define JOYSTICK_ENDPOINT	3
-#define JOYSTICK_SIZE		8
-#define JOYSTICK_BUFFER		EP_DOUBLE_BUFFER
+#define GAMEPAD_INTERFACE	0
+#define GAMEPAD_ENDPOINT	3
+#define GAMEPAD_SIZE		8
+#define GAMEPAD_BUFFER		EP_DOUBLE_BUFFER
 
 static const uint8_t PROGMEM endpoint_config_table[] = {
 	0,
 	0,
-	1, EP_TYPE_INTERRUPT_IN,  EP_SIZE(JOYSTICK_SIZE) | JOYSTICK_BUFFER,
+	1, EP_TYPE_INTERRUPT_IN,  EP_SIZE(GAMEPAD_SIZE) | GAMEPAD_BUFFER,
 	0
 };
 
@@ -104,7 +104,7 @@ static uint8_t PROGMEM device_descriptor[] = {
 	1					// bNumConfigurations
 };
 
-static uint8_t PROGMEM joystick_hid_report_desc[] = { 
+static uint8_t PROGMEM gamepad_hid_report_desc[] = { 
 	0x05, 0x01,        // USAGE_PAGE (Generic Desktop)
 	0x09, 0x05,        // USAGE (Gamepad)
 	0xa1, 0x01,        // COLLECTION (Application)
@@ -133,7 +133,7 @@ static uint8_t PROGMEM joystick_hid_report_desc[] = {
 
 
 #define CONFIG1_DESC_SIZE        (9+9+9+7)
-#define JOYSTICK_HID_DESC_OFFSET (9+9)
+#define GAMEPAD_HID_DESC_OFFSET (9+9)
 static uint8_t PROGMEM config1_descriptor[CONFIG1_DESC_SIZE] = {
 	// configuration descriptor, USB spec 9.6.3, page 264-266, Table 9-10
 	9, 					// bLength;
@@ -148,7 +148,7 @@ static uint8_t PROGMEM config1_descriptor[CONFIG1_DESC_SIZE] = {
 	// interface descriptor, USB spec 9.6.5, page 267-269, Table 9-12
 	9,					// bLength
 	4,					// bDescriptorType
-	JOYSTICK_INTERFACE,			// bInterfaceNumber
+	GAMEPAD_INTERFACE,			// bInterfaceNumber
 	0,					// bAlternateSetting
 	1,					// bNumEndpoints
 	0x03,					// bInterfaceClass (0x03 = HID)
@@ -162,14 +162,14 @@ static uint8_t PROGMEM config1_descriptor[CONFIG1_DESC_SIZE] = {
 	0,					// bCountryCode
 	1,					// bNumDescriptors
 	0x22,					// bDescriptorType
-	sizeof(joystick_hid_report_desc),	// wDescriptorLength
+	sizeof(gamepad_hid_report_desc),	// wDescriptorLength
 	0,
 	// endpoint descriptor, USB spec 9.6.6, page 269-271, Table 9-13
 	7,					// bLength
 	5,					// bDescriptorType
-	JOYSTICK_ENDPOINT | 0x80,		// bEndpointAddress
+	GAMEPAD_ENDPOINT | 0x80,		// bEndpointAddress
 	0x03,					// bmAttributes (0x03=intr)
-	JOYSTICK_SIZE, 0,			// wMaxPacketSize
+	GAMEPAD_SIZE, 0,			// wMaxPacketSize
 	10					// bInterval
 };
 
@@ -207,8 +207,8 @@ static struct descriptor_list_struct {
 } PROGMEM descriptor_list[] = {
 	{0x0100, 0x0000, device_descriptor, sizeof(device_descriptor)},
 	{0x0200, 0x0000, config1_descriptor, sizeof(config1_descriptor)},
-	{0x2100, JOYSTICK_INTERFACE, config1_descriptor+JOYSTICK_HID_DESC_OFFSET, 9},
-	{0x2200, JOYSTICK_INTERFACE, joystick_hid_report_desc, sizeof(joystick_hid_report_desc)},
+	{0x2100, GAMEPAD_INTERFACE, config1_descriptor+GAMEPAD_HID_DESC_OFFSET, 9},
+	{0x2200, GAMEPAD_INTERFACE, gamepad_hid_report_desc, sizeof(gamepad_hid_report_desc)},
 	{0x0300, 0x0000, (const uint8_t *)&string0, 4},
 	{0x0301, 0x0409, (const uint8_t *)&string1, sizeof(STR_MANUFACTURER)},
 	{0x0302, 0x0409, (const uint8_t *)&string2, sizeof(STR_PRODUCT)}
@@ -228,14 +228,14 @@ static volatile uint8_t usb_configuration = 0;
 uint8_t joystick_x = 128;
 uint8_t joystick_y = 128;
 
-uint8_t joystick_buttons = 0;
+uint8_t gamepad_buttons = 0;
 
-static uint8_t joystick_idle_config = 0;
+static uint8_t gamepad_idle_config = 0;
 
 // protocol setting from the host.  We use exactly the same report
 // either way, so this variable only stores the setting since we
 // are required to be able to report which setting is in use.
-static uint8_t joystick_protocol = 1;
+static uint8_t gamepad_protocol = 1;
 
 /**************************************************************************
  *
@@ -263,21 +263,21 @@ uint8_t usb_configured(void) {
   return usb_configuration;
 }
 
-int8_t usb_joystick_action(uint8_t x, uint8_t y, uint8_t buttons) {
+int8_t usb_gamepad_action(uint8_t x, uint8_t y, uint8_t buttons) {
   joystick_x = x;
   joystick_y = y;
-  joystick_buttons = buttons; 
+  gamepad_buttons = buttons; 
 
-  return usb_joystick_send();
+  return usb_gamepad_send();
 }
 
-int8_t usb_joystick_send(void) {
+int8_t usb_gamepad_send(void) {
 	uint8_t intr_state, timeout;
 
 	if (!usb_configuration) return -1;
 	intr_state = SREG;
 	cli();
-	UENUM = JOYSTICK_ENDPOINT;
+	UENUM = GAMEPAD_ENDPOINT;
 	timeout = UDFNUML + 50;
 	while (1) {
 		// are we ready to transmit?
@@ -290,11 +290,11 @@ int8_t usb_joystick_send(void) {
 		// get ready to try checking again
 		intr_state = SREG;
 		cli();
-		UENUM = JOYSTICK_ENDPOINT;
+		UENUM = GAMEPAD_ENDPOINT;
 	}
 	UEDATX = joystick_x;
 	UEDATX = joystick_y;
-        UEDATX = joystick_buttons;
+        UEDATX = gamepad_buttons;
 	UEINTX = 0x3A;
 	SREG = intr_state;
 	return 0;
@@ -476,46 +476,43 @@ ISR(USB_COM_vect)
 			}
 		}
 		#endif
-		if (wIndex == JOYSTICK_INTERFACE) {
+		if (wIndex == GAMEPAD_INTERFACE) {
 			if (bmRequestType == 0xA1) {
 				if (bRequest == HID_GET_REPORT) {
 					usb_wait_in_ready();
                                         UEDATX = joystick_x;
                                         UEDATX = joystick_y;
-                                        UEDATX = joystick_buttons;
+                                        UEDATX = gamepad_buttons;
 					usb_send_in();
 					return;
 				}
 				if (bRequest == HID_GET_IDLE) {
 					usb_wait_in_ready();
-					UEDATX = joystick_idle_config;
+					UEDATX = gamepad_idle_config;
 					usb_send_in();
 					return;
 				}
 				if (bRequest == HID_GET_PROTOCOL) {
 					usb_wait_in_ready();
-					UEDATX = joystick_protocol;
+					UEDATX = gamepad_protocol;
 					usb_send_in();
 					return;
 				}
 			}
 			if (bmRequestType == 0x21) {
 				if (bRequest == HID_SET_REPORT) {
-                                  
 					usb_wait_receive_out();
-					//keyboard_leds = UEDATX;
 					usb_ack_out();
 					usb_send_in();
-                                  
 					return;
 				}
 				if (bRequest == HID_SET_IDLE) {
-					joystick_idle_config = (wValue >> 8);
+					gamepad_idle_config = (wValue >> 8);
 					usb_send_in();
 					return;
 				}
 				if (bRequest == HID_SET_PROTOCOL) {
-					joystick_protocol = wValue;
+					gamepad_protocol = wValue;
 					usb_send_in();
 					return;
 				}

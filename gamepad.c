@@ -85,7 +85,7 @@ int main(void) {
       b |= BUTTON2;
     }
 
-    usb_joystick_action(x, y, b);
+    usb_gamepad_action(x, y, b);
 
     // debug message
     if (x != 128 || y != 128 || b != 0) {
